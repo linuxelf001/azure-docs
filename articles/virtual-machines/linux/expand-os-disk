@@ -1,17 +1,15 @@
 ---
-title: Extend OS disk partition and filesystem of virtual hard disks on Azure Linux VM using command-line tools
-description: Use basic command-line tools to extend OS disk partition and filesystem of virtual hard disk on Azure Linux VMs.
-author: Rakesh_Ginjupalli
+title: Extend disk partition and filesystem of virtual hard disks on Azure Linux VM using command-line tools
+description: Use basic command-line tools to extend disk partition and filesystem of virtual hard disks on Azure Linux VMs.
+author: rakesh_ginjupalli
 ms.service: virtual-machines-linux
 ms.topic: how-to
-ms.date: 9/16/2020
+ms.date: 9/14/2020
 ms.author: rakesh_ginjupalli
 ms.subservice: disks
 ---
 
-# 
-
-# Extend virtual OS hard disk on Azure Linux VM using command line tools
+# Extend virtual hard disks on Azure Linux VM using command line tools
 Azure Portal and [Azure CLI](/cli/azure/install-az-cli2) tools allow you to attach your choice of managed disk space to your Linux VMs as well as expand the size of existing disks. Once the virtual hard disks are up and running inside your VMs, you may find it necessary to extend the partition and filesystem to span the actual available disk than what was initally allocated by Azure. This article describes how you can accomplish this in a few simple steps using basic command-line tools installed on almost all Linux VMs.
 
 > [!WARNING]
@@ -124,4 +122,4 @@ Once you have expanded disk size using Azure Portal or CLI, you will need to upd
 
 ## Next steps
 * If you need additional storage, you can also [add data disks to a Linux VM](add-disk.md). 
-* For more information about disk encryption, see [Azure Disk Encryption for Linux VMs](disk-encryption-overview.md)
+* For more information about disk encryption, see [Azure Disk Encryption for Linux VMs](disk-encryption-overview.md).

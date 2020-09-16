@@ -1,0 +1,127 @@
+---
+title: Extend OS disk partition and filesystem of virtual hard disks on Azure Linux VM using command-line tools
+description: Use basic command-line tools to extend OS disk partition and filesystem of virtual hard disk on Azure Linux VMs.
+author: Rakesh_Ginjupalli
+ms.service: virtual-machines-linux
+ms.topic: how-to
+ms.date: 9/16/2020
+ms.author: rakesh_ginjupalli
+ms.subservice: disks
+---
+
+# 
+
+# Extend virtual OS hard disk on Azure Linux VM using command line tools
+Azure Portal and [Azure CLI](/cli/azure/install-az-cli2) tools allow you to attach your choice of managed disk space to your Linux VMs as well as expand the size of existing disks. Once the virtual hard disks are up and running inside your VMs, you may find it necessary to extend the partition and filesystem to span the actual available disk than what was initally allocated by Azure. This article describes how you can accomplish this in a few simple steps using basic command-line tools installed on almost all Linux VMs.
+
+> [!WARNING]
+> Before you proceed, ensure that [your data is backed up](tutorial-backup-vms.md) and that your filesystem is in a healthy state. 
+
+## Expand disk partition and filesystem
+Once you have expanded disk size using Azure Portal or CLI, you will need to update the partition and filesystem on the newly expanded disk.
+
+1. SSH to your VM with the your credentials. You can see the public IP address of your VM with [az vm show](/cli/azure/vm#az-vm-show):
+
+    ```azurecli
+    az vm show --resource-group myResourceGroup --name myVM -d --query [publicIps] --output tsv
+    ```
+
+2. Expand the underlying partition and filesystem.
+
+	a. Elevate your user privileges to perform the next set of operations, enter your password if required.
+	
+	```bash
+	sudo -s
+	```
+
+	b. Find the partition number of the partition you want to resize using `lsblk`, which should show something similar to the following output:
+
+	```bash
+	NAME    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+	vda     252:0    0   25G  0 disk 
+	|-vda1  252:1    0 	  10G  0 part /
+	|-vda14 252:14   0    4M  0 part 
+	`-vda15 252:15   0  106M  0 part /boot/efi
+	```
+
+	c. For this example let's say we want to extend the root partition `vda1` on device `vda` from 10GB to 24.9GB (out of a total of 25GB total physical disk space available to us in this VM). Before we begin, it's important we note down the start sector of the partition you want to expand. We can do this using the `parted /dev/vda unit s print free` command, which should produce something similar to the following output:
+	```bash
+	Model: Virtio Block Device (virtblk)
+	Disk /dev/vda: 52428800s
+	Sector size (logical/physical): 512B/512B
+	Partition Table: gpt
+	Disk Flags: 
+
+	Number  Start      End        Size       File system  Name  Flags
+	        34s        2047s      2014s      Free Space
+	14      2048s      10239s     8192s                         bios_grub
+	15      10240s     227327s    217088s    fat32              msftdata
+	 1      227328s    21198847s  20971520s  ext4
+	        21198848s  52428766s  31229919s  Free Space
+	```
+
+	From the ouput of the `parted` command we can see the starting sector for the root partition that we want to expand (partition number 1) is `227328`. Following this partition is a bunch of unallocated empty space that we can use to expand the partition into. The last sector of this empty space we can use to expand is `52428766`. Using these two bits of information we can now proceed to the next step of actually expanding the root partition.
+
+	d. To begin the process of expanding the partition, launch `fdisk /dev/vda` and delete the `vda1` partition first by issuing the `d` command and entering `1` as the partition number:
+
+	```bash
+	Welcome to fdisk (util-linux 2.34).
+	Changes will remain in memory only, until you decide to write them.
+	Be careful before using the write command.
+
+	Command (m for help): d
+	Partition number (1,14,15, default 15): 1
+	```
+
+	This should now reflect in the output:
+
+	```bash
+	Partition 1 has been deleted.
+	```
+
+	Next, use the `n` command to create a new partition and enter `1` as the partition number:
+	```bash
+	Command (m for help): n
+	Partition number (1-13,16-128, default 1): 1
+	```
+
+	Enter the start and end sectors obtained from the `parted` command, to mark the new partition's disk size:
+	```bash
+	First sector (34-52428766, default 227328): 227328 
+	Last sector, +/-sectors or +/-size{K,M,G,T,P} (227328-52428766, default 52428766): 52428766
+	```
+
+	If the parition was successful, the output should now show a preview of the resized partition:
+	```bash
+	Created a new partition 1 of type 'Linux filesystem' and of size 24.9 GiB.
+	Partition #1 contains a ext4 signature.
+	```
+
+	To leave the filesystem signature as it is, enter `N` when the command asks if you want to remove the signature, then commit the changes made to the partition table so far using the `w` command to make the previous edits permanent:
+
+	```bash
+	Do you want to remove the signature? [Y]es/[N]o: N
+
+	Command (m for help): w
+
+	The partition table has been altered.
+	Syncing disks.
+	```
+
+	This completes resizing the partition table to span the newly expanded disk space but the filesystem must be notified of these changes manually. We can accomplish this with the `resize2fs \dev\vda` command, which will show an output similar to this:
+
+	```bash
+	Resizing the filesystem on /dev/vda1 to 6525179 (4k) blocks.
+	The filesystem on /dev/vdb1 is now 6525179 blocks long.
+	```
+
+3. To verify the data disk has been resized, use `df -h`. The following example output shows the data drive */dev/vda1* is now 24.9 GB:
+
+    ```bash
+    Filesystem      Size   Used  Avail Use% Mounted on
+    /dev/vda1       25G    110M  24.9G   1% /
+    ```
+
+## Next steps
+* If you need additional storage, you can also [add data disks to a Linux VM](add-disk.md). 
+* For more information about disk encryption, see [Azure Disk Encryption for Linux VMs](disk-encryption-overview.md)

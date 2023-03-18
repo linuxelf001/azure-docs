@@ -82,7 +82,7 @@ Make a note of the `publicIpAddress` to use later.
 
 ## Create Confidential virtual machine using a Customer Managed Key
 
-Create a confidential [disk encryption set](../virtual-machines/linux/disks-enable-customer-managed-keys-cli.md) using [Azure Key Vault](../key-vault/general/quick-create-cli.md) or [Azure Key Vault managed Hardware Security Module (HSM)](../key-vault/managed-hsm/quick-create-cli.md). Based on your security and compliance needs you can choose either option. The following example uses Azure Key Vault Premium. 
+To create a confidential [disk encryption set](../virtual-machines/linux/disks-enable-customer-managed-keys-cli.md), you have two options: Using [Azure Key Vault](../key-vault/general/quick-create-cli.md) or [Azure Key Vault managed Hardware Security Module (HSM)](../key-vault/managed-hsm/quick-create-cli.md). However, it is important to note that the standard SKU is not supported. Based on your security and compliance requirements you can choose either option. For example, in the following instance Azure Key Vault Premium is used.  
 
 1.  Create an Azure Key Vault using the [az keyvault create](/cli/azure/keyvault) command. For the pricing tier, select Premium (includes support for HSM backed keys). Make sure that you have an owner role in this key vault.
   ```azurecli-interactive
